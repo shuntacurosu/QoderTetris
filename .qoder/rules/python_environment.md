@@ -1,3 +1,6 @@
+---
+trigger: manual
+---
 # Python環境セットアップルール (Model Decision)
 
 **適用条件**: 新しいPythonプロジェクトの開始、環境構築時
