@@ -10,7 +10,7 @@ Gymnasium準拠のテトリスゲーム環境
 - **WASDキー** による快適な操作性
 - **モジュール設計** でゲームロジックとUI表示を分離
 - 将来の**強化学習エージェント**対応を考慮した拡張可能な設計
-- 包括的なテストスイート付き
+- **包括的なテストスイート** 付き
 
 ## セットアップ
 
@@ -46,17 +46,34 @@ python play.py
 
 ### テストを実行
 ```bash
-python test.py
+# 基本テスト
+pytest
+
+# カバレッジ付きテスト
+pytest --cov=tetris --cov-report=html
+
+# 特定のテストカテゴリ
+pytest -m "not slow"          # 高速テストのみ
+pytest -m performance         # パフォーマンステスト
+pytest -m edge_case           # エッジケーステスト
+pytest -m property_based      # プロパティベーステスト
 ```
 
 ## 必要ライブラリ
 
+### 基本依存関係
 - **gymnasium** >= 0.29.0 - Gymnasium準拠のRL環境
 - **numpy** >= 1.24.0 - 数値計算
 - **keyboard** >= 0.13.5 - キーボード入力処理
 
-詳細は `requirements.txt` を参照してください。
+### テスト依存関係
+- **pytest** >= 7.0.0 - テストフレームワーク
+- **pytest-cov** >= 4.0.0 - カバレッジ測定
+- **pytest-timeout** >= 2.1.0 - タイムアウト制御
+- **hypothesis** >= 6.0.0 - プロパティベーステスト
+- **psutil** >= 5.9.0 - パフォーマンス監視
 
+詳細は `requirements.txt` を参照してください。
 
 ## プロジェクト構造
 
@@ -64,8 +81,20 @@ python test.py
 QoderTetris/
 ├── requirements.txt     # 依存関係定義
 ├── README.md           # プロジェクト説明
+├── pytest.ini         # テスト設定
 ├── play.py             # メインゲームプレイスクリプト
-├── test.py             # テストスイート
+├── test.py             # 統合テストスクリプト
+├── .github/workflows/  # CI/CD設定
+│   └── test.yml        # GitHub Actions設定
+├── tests/              # テストスイート
+│   ├── conftest.py                # テスト設定とフィクスチャ
+│   ├── test_core.py              # コアロジックテスト
+│   ├── test_env.py               # Gymnasium環境テスト
+│   ├── test_renderer.py          # レンダラーテスト
+│   ├── test_integration.py       # 統合テスト
+│   ├── test_edge_cases.py        # エッジケーステスト
+│   ├── test_performance.py       # パフォーマンステスト
+│   └── test_property_based.py    # プロパティベーステスト
 └── tetris/             # コアモジュール
     ├── __init__.py
     ├── core.py         # テトリスのコアゲームロジック
@@ -86,39 +115,75 @@ QoderTetris/
 - **Q**: ゲーム終了
 - **R**: リスタート
 
+## テストスイート
+
+### テストカテゴリ
+
+1. **基本テスト** (`test_core.py`, `test_env.py`, `test_renderer.py`)
+   - コア機能の動作確認
+   - Gymnasium環境の準拠性検証
+   - レンダリング機能テスト
+
+2. **統合テスト** (`test_integration.py`)
+   - コンポーネント間の連携テスト
+   - エンドツーエンドシナリオ
+
+3. **エッジケーステスト** (`test_edge_cases.py`)
+   - 境界条件での動作確認
+   - 異常系の処理検証
+   - メモリリーク防止テスト
+
+4. **パフォーマンステスト** (`test_performance.py`)
+   - 実行速度の測定（目標: 60+ FPS）
+   - メモリ使用量の監視
+   - スケーラビリティ検証
+
+5. **プロパティベーステスト** (`test_property_based.py`)
+   - 不変条件の検証
+   - ランダムデータでの堅牢性テスト
+   - 決定論的動作の確認
+
+### テスト品質指標
+
+- **行カバレッジ**: 80%以上（目標: 90%）
+- **実行速度**: 60+ FPS
+- **メモリ使用量**: 安定性確保
+- **並行実行**: 複数環境対応
+
+### CI/CD
+
+GitHub Actionsによる自動テスト実行：
+- 複数OS対応（Ubuntu, Windows, macOS）
+- Python 3.9-3.12サポート
+- カバレッジレポート自動生成
+- コード品質チェック（Black, flake8, mypy）
+
 ## 技術仕様
 
-- **Python**: 3.12+
+- **Python**: 3.9+（推奨: 3.12）
 - **環境標準**: Gymnasium 0.29.0+
 - **UI**: CUIベース（ターミナル上でのリアルタイム描画）
 - **プラットフォーム**: Windows/Unix/Linux 対応
-
-## テスト
-
-コア機能、Gymnasium環境、レンダラー、ゲームプレイの包括的なテストが含まれています。
-
-```bash
-python test.py
-```
-
-テストは以下を検証します：
-- ✅ コア機能（ボード、ピース、アクション）
-- ✅ Gymnasium環境（reset, step, render, close）
-- ✅ レンダラー（スタート、ゲーム、ゲームオーバー画面）
-- ✅ 基本ゲームプレイ（自動デモ付き）
+- **テスト**: pytest + hypothesis + 性能監視
 
 ## 開発者情報
 
 ### アーキテクチャ
 - **モジュール性**: ゲームロジックとUI表示の完全分離
 - **拡張性**: 強化学習エージェント接続時の切り替えが容易
-- **標準準拠**: Gymnasium環境の標準的なインターフェースを避守
+- **標準準拠**: Gymnasium環境の標準的なインターフェースを遵守
 
 ### 主要クラス
 - **TetrisBoard**: ゲーム盤面とルール管理
 - **TetrisEnv**: Gymnasium準拠のRL環境
 - **TetrisRenderer**: CUIベースの描画システム
 - **GameController**: キーボード入力処理とアクション変換
+
+### 開発ワークフロー
+- **TDD**: テスト駆動開発の採用
+- **コード品質**: 自動フォーマット・リント
+- **継続的統合**: GitHub Actions
+- **カバレッジ**: Codecov連携
 
 ## ライセンス
 

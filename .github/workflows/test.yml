@@ -8,11 +8,12 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        python-version: [3.8, 3.9, '3.10', 3.11]
-
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        
     steps:
     - uses: actions/checkout@v4
     
@@ -20,20 +21,93 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
-    
+        
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-    
-    - name: Run tests with pytest
+        
+    - name: Run basic tests
       run: |
-        pytest --cov=tetris --cov-report=xml --cov-report=term-missing
-    
+        pytest tests/test_core.py tests/test_env.py tests/test_renderer.py -v --cov=tetris
+        
+    - name: Run integration tests  
+      run: |
+        pytest tests/test_integration.py -v --cov=tetris --cov-append
+        
+    - name: Run edge case tests
+      run: |
+        pytest tests/test_edge_cases.py -v --cov=tetris --cov-append
+        
+    - name: Run property-based tests
+      run: |
+        pytest tests/test_property_based.py -v --cov=tetris --cov-append
+        
+    - name: Generate coverage report
+      run: |
+        pytest --cov=tetris --cov-report=xml --cov-report=html
+        
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         flags: unittests
         name: codecov-umbrella
-      if: matrix.python-version == '3.9'
+        fail_ci_if_error: false
+
+  performance-test:
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run performance tests
+      run: |
+        pytest tests/test_performance.py -v -m "not slow" --tb=short
+        
+    - name: Run long-running tests
+      if: github.event_name == 'push'
+      run: |
+        pytest tests/test_performance.py -v -m "slow" --tb=short
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.12"
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 black mypy
+        
+    - name: Check code formatting with Black
+      run: |
+        black --check --diff tetris/ tests/
+        
+    - name: Lint with flake8
+      run: |
+        flake8 tetris/ tests/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 tetris/ tests/ --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+        
+    - name: Type checking with mypy
+      continue-on-error: true
+      run: |
+        mypy tetris/ --ignore-missing-imports
