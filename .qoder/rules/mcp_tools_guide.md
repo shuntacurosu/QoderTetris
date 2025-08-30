@@ -1,3 +1,6 @@
+---
+trigger: manual
+---
 # MCPツール活用ガイド (Apply Manually)
 
 **使用方法**: @rule mcp_tools でチャットで手動適用

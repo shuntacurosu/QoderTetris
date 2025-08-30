@@ -1,3 +1,6 @@
+---
+trigger: manual
+---
 # プロジェクト全体標準 (Always Apply)
 
 ## 開発方針

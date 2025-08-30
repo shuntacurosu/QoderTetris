@@ -1,3 +1,6 @@
+---
+trigger: manual
+---
 # Pythonファイル専用ルール (Specific Files: *.py)
 
 ## コーディング標準
